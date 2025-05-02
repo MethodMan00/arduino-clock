@@ -1,0 +1,61 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <RTClib.h>
+
+// Create objects for the RTC and the LCD
+RTC_DS1307 rtc;       // DS1307 RTC object
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address for LCD and 16x2 display
+
+// Flag to check if time has been set
+bool timeSet = false;
+
+void setup() {
+  // Initialize the serial monitor
+  Serial.begin(9600);
+
+  // Initialize RTC and LCD
+  lcd.begin(16, 2);
+  lcd.backlight();  // Turn on the LCD backlight
+  lcd.setCursor(0, 0);
+  lcd.print("Digital Clock");
+
+  // Initialize RTC
+  if (!rtc.begin()) {
+    lcd.setCursor(0, 1);
+    lcd.print("Couldn't find RTC");
+    while (1);
+  }
+
+  // Check if RTC is running; if not, set the time (only once)
+  if (!timeSet) {
+    DateTime now = rtc.now();
+    if (now.second() == 0 && now.minute() == 0 && now.hour() == 0) {
+      // Set the time if it's not already set (example: 12:00:00 on 1 Jan 2025)
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // Set time to compile time (use current date/time)
+      timeSet = true;  // Flag time as set
+      Serial.println("Time set to compile time"); // For debugging
+    }
+  }
+}
+
+void loop() {
+  // Get the current time from RTC
+  DateTime now = rtc.now();
+
+  int hour = now.hour();
+  int minute = now.minute();
+  int second = now.second();
+
+  // Display time on LCD
+  lcd.setCursor(0, 1);
+  if (hour < 10) lcd.print("0");
+  lcd.print(hour);
+  lcd.print(":");
+  if (minute < 10) lcd.print("0");
+  lcd.print(minute);
+  lcd.print(":");
+  if (second < 10) lcd.print("0");
+  lcd.print(second);
+
+  delay(1000);  // Update every second
+}
